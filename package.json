@@ -1,0 +1,20 @@
+{
+  "name": "porter-mvp",
+  "version": "1.0.0",
+  "description": "Porter - A drag-and-drop report builder tool for database data visualization",
+  "main": "server/index.js",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "server": "cd server && npm run dev",
+    "client": "cd client && npm run dev",
+    "build": "cd client && npm run build",
+    "start": "cd server && npm start"
+  },
+  "keywords": ["reports", "database", "visualization", "drag-drop"],
+  "author": "Reporter Team",
+  "license": "MIT",
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
+
