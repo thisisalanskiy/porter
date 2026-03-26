@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Table, Typography } from 'antd';
 import { DatabaseSchema } from '../../types';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { Title } = Typography;
 
@@ -11,10 +12,13 @@ interface Props {
   onConfigChange: (config: any) => void;
 }
 
-const DataTable: React.FC<Props> = ({ data, config, schema, onConfigChange }) => {
+const DataTable: React.FC<Props> = ({ data, config }) => {
+  const { tokens } = useTheme();
+  const [pageSize, setPageSize] = useState<number>(config?.limit || 50);
+
   if (!data || data.length === 0) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+      <div style={{ textAlign: 'center', padding: '20px', color: tokens.textSecondary }}>
         No data available
       </div>
     );
@@ -48,12 +52,13 @@ const DataTable: React.FC<Props> = ({ data, config, schema, onConfigChange }) =>
         dataSource={data}
         columns={columns}
         pagination={{
-          pageSize: config?.limit || 50,
+          pageSize,
+          onShowSizeChange: (_, size) => setPageSize(size),
           showSizeChanger: true,
-          showQuickJumper: true,
-          showTotal: (total, range) => 
-            `${range[0]}-${range[1]} of ${total} items`,
+          showTotal: (total) => `${total} rows`,
+          size: 'small',
         }}
+        style={{ overflow: 'hidden' }}
         scroll={{ x: 'max-content' }}
       />
     </div>

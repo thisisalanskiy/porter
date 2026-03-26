@@ -12,6 +12,10 @@
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   -webkit-text-size-adjust: 100%;
+
+  /* Aizen Light defaults */
+  --accent: #6898E8;
+  --accent-hover: #4F7DCE;
 }
 
 body {
@@ -20,8 +24,31 @@ body {
   place-items: center;
   min-width: 320px;
   min-height: 100vh;
-  background: #f5f5f5;
-  color: #333;
+  background: #F4F5FA;
+  color: #1A1C2E;
+  transition: background 0.2s, color 0.2s;
+}
+
+/* Aizen Dark */
+body[data-theme='dark'] {
+  background: #1A1A1A;
+  color: #D0D6F0;
+  --accent: #84B4F8;
+  --accent-hover: #6898E8;
+}
+
+body[data-theme='dark'] ::-webkit-scrollbar-track {
+  background: #141414;
+  border-radius: 6px;
+}
+
+body[data-theme='dark'] ::-webkit-scrollbar-thumb {
+  background: #333333;
+  border-color: #141414;
+}
+
+body[data-theme='dark'] ::-webkit-scrollbar-thumb:hover {
+  background: #444444;
 }
 
 #root {
@@ -41,54 +68,52 @@ body {
   left: 0;
   width: 100%;
   height: 100%;
-  background: rgba(45, 135, 234, 0.2);
-  border: 2px dashed #2d87ea;
+  background: color-mix(in srgb, var(--accent) 20%, transparent);
+  border: 2px dashed var(--accent);
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 18px;
   font-weight: 600;
-  color: #2d87ea;
+  color: var(--accent);
   z-index: 1000;
 }
 
 .droppable-zone {
   position: relative;
   min-height: 200px;
-  border: 2px dashed #d9d9d9;
+  border: 2px dashed var(--border, #D5D8E8);
   border-radius: 8px;
   padding: 16px;
-  background: #fafafa;
+  background: transparent;
   transition: all 0.3s ease;
 }
 
 .droppable-zone.drag-over {
-  border-color: #2d87ea;
-  background: rgba(45, 135, 234, 0.05);
+  border-color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
 .draggable-item {
   padding: 16px;
   margin: 8px 0;
-  background: white;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border, #D5D8E8);
   border-radius: 6px;
   cursor: grab;
   transition: all 0.3s ease;
 }
 
 .draggable-item:hover {
-  border-color: #1890ff;
-  color: #1890ff;
+  border-color: var(--accent);
+  color: var(--accent);
 }
 
 .report-element {
   margin: 16px 0;
   padding: 16px;
-  background: white;
   border-radius: 8px;
-  border: 1px solid #d9d9d9;
+  border: 1px solid var(--border, #D5D8E8);
 }
 
 .report-element.dragging {
@@ -108,12 +133,12 @@ body {
 /* Consistent hover effects for cards */
 .folder-card:hover,
 .report-card:hover {
-  border-color: #1890ff !important;
+  border-color: var(--accent) !important;
 }
 
 .folder-card:hover .ant-card-body,
 .report-card:hover .ant-card-body {
-  color: #1890ff;
+  color: var(--accent);
 }
 
 /* Trash button visibility on hover - IMPORTANT */
@@ -143,28 +168,28 @@ body {
 }
 
 ::-webkit-scrollbar-track {
-  background: #f0f0f0;
+  background: #E8EAF2;
   border-radius: 6px;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #bfbfbf;
+  background: #BFC3D4;
   border-radius: 6px;
-  border: 2px solid #f0f0f0;
+  border: 2px solid #E8EAF2;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #999;
+  background: #8088A8;
 }
 
 ::-webkit-scrollbar-thumb:active {
-  background: #666;
+  background: #586080;
 }
 
 /* Firefox scrollbar styling */
 * {
   scrollbar-width: thin;
-  scrollbar-color: #bfbfbf #f0f0f0;
+  scrollbar-color: #BFC3D4 #E8EAF2;
 }
 
 /* Remove Ant Design Collapse default padding */
@@ -178,31 +203,37 @@ body {
 
 /* Component card hover styling */
 .component-card:hover {
-  border-color: #1890ff !important;
-  color: #1890ff !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
 }
 
 .component-card:hover .ant-card-body {
-  color: #1890ff !important;
+  color: var(--accent) !important;
 }
 
 /* Database card hover styling */
 .database-card:hover {
-  border-color: #1890ff !important;
-  color: #1890ff !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
 }
 
 .database-card:hover .ant-card-body {
-  color: #1890ff !important;
+  color: var(--accent) !important;
 }
 
 /* Schedule card hover styling */
 .schedule-card:hover {
-  border-color: #1890ff !important;
-  color: #1890ff !important;
+  border-color: var(--accent) !important;
+  color: var(--accent) !important;
 }
 
 .schedule-card:hover .ant-card-body {
-  color: #1890ff !important;
+  color: var(--accent) !important;
 }
+
+.ant-table-pagination {
+  flex-wrap: nowrap !important;
+  gap: 4px;
+}
+
 

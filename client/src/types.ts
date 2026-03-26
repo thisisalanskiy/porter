@@ -42,6 +42,7 @@ export interface ReportElement {
   width?: number;
   height?: number;
   columnSpan?: number; // Number of columns this element should span (1, 2, or 3)
+  queryBuilderConfig?: QueryBuilderConfig;
 }
 
 export interface ComponentType {
@@ -66,6 +67,37 @@ export interface TableConfig {
   limit?: number;
   orderBy?: string;
   sortDirection?: 'ASC' | 'DESC';
+}
+
+export interface MetricCardConfig {
+  title?: string;
+  prefix?: string;
+  suffix?: string;
+  valueField?: string;
+  fontSize?: string;
+  color?: string;
+}
+
+export interface SemanticField {
+  id: string;
+  label: string;
+  tableName: string;
+  columnName: string;
+  dataType: string;
+  description?: string;
+}
+
+export interface SemanticLayer {
+  fields: SemanticField[];
+}
+
+export interface QueryBuilderConfig {
+  table?: string;
+  fields?: string[];
+  filters?: Array<{ field: string; operator: string; value: string }>;
+  orderBy?: string;
+  orderDir?: 'ASC' | 'DESC';
+  limit?: number;
 }
 
 export interface ReportTemplate {

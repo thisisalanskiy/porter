@@ -2,6 +2,7 @@ import React from 'react';
 import { LineChart as RechartsLineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Typography } from 'antd';
 import { DatabaseSchema } from '../../types';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { Title } = Typography;
 
@@ -12,10 +13,11 @@ interface Props {
   onConfigChange: (config: any) => void;
 }
 
-const LineChart: React.FC<Props> = ({ data, config, schema }) => {
+const LineChart: React.FC<Props> = ({ data, config }) => {
+  const { tokens } = useTheme();
   if (!data || data.length === 0 || !config?.xAxisField || !config?.yAxisField) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+      <div style={{ textAlign: 'center', padding: '20px', color: tokens.textSecondary }}>
         {!config?.xAxisField || !config?.yAxisField 
           ? 'Please configure X and Y axis fields' 
           : 'No data available'}

@@ -1,13 +1,21 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useDrop } from 'react-dnd';
 import { Card, Button, Modal, Tag } from 'antd';
 import ReportElement from './ReportElement';
 import ElementConfigPanel from './ElementConfigPanel';
-import { ReportElement as ReportElementType, DatabaseConnection } from '../types';
-import axios from 'axios';
+import { ReportElement as ReportElementType, DatabaseConnection, DatabaseSchema, QueryBuilderConfig } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
+
+const isNumericType = (dataType: string): boolean => {
+  const t = dataType.toLowerCase();
+  return t.includes('int') || t.includes('numeric') || t.includes('float') ||
+    t.includes('double') || t.includes('decimal') || t === 'real';
+};
 
 interface Props {
   elements: ReportElementType[];
+  onAddElement: (type: string, columnSpan: number) => string;
+  onAddElementWithData: (type: string, config: QueryBuilderConfig) => string;
   onUpdateElement: (id: string, updates: Partial<ReportElementType>) => void;
   onUpdateElementConfig: (id: string, updates: Partial<ReportElementType>) => void;
   onDeleteElement: (id: string) => void;
@@ -15,13 +23,14 @@ interface Props {
   selectedElement: string | null;
   onSelectElement: (id: string | null) => void;
   databaseConnection: DatabaseConnection | null;
-  availableColumns: number;
-  setAvailableColumns: (columns: number) => void;
   reportOrientation: 'portrait' | 'landscape';
+  schema: DatabaseSchema | null;
 }
 
 const ReportBuilder: React.FC<Props> = ({
   elements,
+  onAddElement,
+  onAddElementWithData,
   onUpdateElement,
   onUpdateElementConfig,
   onDeleteElement,
@@ -30,42 +39,39 @@ const ReportBuilder: React.FC<Props> = ({
   onSelectElement,
   databaseConnection,
   reportOrientation,
+  schema,
 }) => {
-  const [schema, setSchema] = useState(null);
+  const [isAnyResizing, setIsAnyResizing] = useState(false);
+  const { tokens } = useTheme();
 
   const [{ isOver }, drop] = useDrop({
-    accept: 'component',
-    drop: (item: { type: string, columnSpan?: number }) => {
-      const newElement: ReportElementType = {
-        id: `element-${Date.now()}`,
-        type: item.type,
-        config: {},
-        position: { x: 0, y: elements.length * 250 },
-        data: [],
-        columnSpan: item.columnSpan || 1,
-      };
-      onUpdateElement(newElement.id, { ...newElement });
-      onSelectElement(newElement.id);
+    accept: ['component', 'db-table', 'db-column'],
+    drop: (item: any, monitor) => {
+      const itemType = monitor.getItemType();
+      if (itemType === 'component') {
+        const id = onAddElement(item.type, item.columnSpan || 1);
+        onSelectElement(id);
+      } else if (itemType === 'db-table') {
+        const id = onAddElementWithData('table', {
+          table: item.tableName,
+          fields: [],
+          limit: 100,
+        });
+        onSelectElement(id);
+      } else if (itemType === 'db-column') {
+        const elementType = isNumericType(item.dataType) ? 'metric-card' : 'table';
+        const id = onAddElementWithData(elementType, {
+          table: item.tableName,
+          fields: [item.columnName],
+          limit: 100,
+        });
+        onSelectElement(id);
+      }
     },
     collect: (monitor) => ({
       isOver: monitor.isOver(),
     }),
   });
-
-  useEffect(() => {
-    if (databaseConnection) {
-      fetchSchema();
-    }
-  }, [databaseConnection]);
-
-  const fetchSchema = async () => {
-    try {
-      const response = await axios.get('/api/db/schema');
-      setSchema(response.data);
-    } catch (error) {
-      console.error('Failed to fetch schema:', error);
-    }
-  };
 
   const handleElementClick = (elementId: string) => {
     onSelectElement(elementId);
@@ -125,9 +131,9 @@ const ReportBuilder: React.FC<Props> = ({
             style={{
               minHeight: '600px',
               padding: '16px',
-              border: isOver ? '2px dashed #2d87ea' : '2px dashed #d9d9d9',
+              border: isOver ? `2px dashed ${tokens.accent}` : `2px dashed ${tokens.borderMedium}`,
               borderRadius: '8px',
-              background: isOver ? 'rgba(45, 135, 234, 0.05)' : '#fafafa',
+              background: isOver ? `color-mix(in srgb, ${tokens.accent} 5%, transparent)` : tokens.bgCanvas,
               position: 'relative',
               display: 'flex',
               flexDirection: 'column',
@@ -138,49 +144,55 @@ const ReportBuilder: React.FC<Props> = ({
             }}
           >
             {elements.length === 0 ? (
-              <div style={{ 
-                textAlign: 'center', 
-                color: '#999', 
+              <div style={{
+                textAlign: 'center',
+                color: tokens.textSecondary,
                 fontSize: '16px',
-                marginTop: '200px' 
+                marginTop: '200px'
               }}>
                 Drag components here to build your report
               </div>
             ) : (
               <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, 1fr)',
-                gridAutoRows: 'auto',
-                gridAutoFlow: 'row dense',
-                gap: '16px',
-                width: '100%',
-                alignItems: 'start',
-                maxWidth: '100%'
-              }}>
-                {elements.map((element, index) => (
-                  <div
-                    key={element.id}
-                    style={{
-                      gridColumn: `span ${element.columnSpan || 1}`,
-                      width: '100%',
-                      display: 'flex',
-                      flexDirection: 'column'
-                    }}
-                  >
-                    <ReportElement
-                      element={element}
-                      schema={schema}
-                      databaseConnection={databaseConnection}
-                      isSelected={selectedElement === element.id}
-                      onClick={() => handleElementClick(element.id)}
-                      onDelete={() => handleDeleteElement(element.id)}
-                      onUpdate={(updates) => onUpdateElement(element.id, updates)}
-                      index={index}
-                      onMoveElement={handleMoveElement}
-                    />
-                  </div>
-                ))}
-              </div>
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(3, 1fr)',
+                  gridAutoRows: 'auto',
+                  gridAutoFlow: 'row',
+                  gap: '16px',
+                  width: '100%',
+                  alignItems: 'start',
+                  backgroundImage: isAnyResizing
+                    ? 'linear-gradient(to right, rgba(0,0,0,0.03) 0, rgba(0,0,0,0.03) calc((100% - 32px) / 3), transparent calc((100% - 32px) / 3), transparent calc((100% - 32px) / 3 + 16px), rgba(0,0,0,0.03) calc((100% - 32px) / 3 + 16px), rgba(0,0,0,0.03) calc((100% - 32px) * 2 / 3 + 16px), transparent calc((100% - 32px) * 2 / 3 + 16px), transparent calc((100% - 32px) * 2 / 3 + 32px), rgba(0,0,0,0.03) calc((100% - 32px) * 2 / 3 + 32px), rgba(0,0,0,0.03) 100%)'
+                    : undefined,
+                }}>
+                  {elements.map((element, index) => (
+                    <div
+                      key={element.id}
+                      style={{
+                        gridColumn: `span ${element.columnSpan || 1}`,
+                        width: '100%',
+                        minWidth: 0,
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}
+                    >
+                      <ReportElement
+                        element={element}
+                        schema={schema}
+                        databaseConnection={databaseConnection}
+                        isSelected={selectedElement === element.id}
+                        onClick={() => handleElementClick(element.id)}
+                        onDelete={() => handleDeleteElement(element.id)}
+                        onUpdate={(updates) => onUpdateElement(element.id, updates)}
+                        index={index}
+                        onMoveElement={handleMoveElement}
+                        onResizeStart={() => setIsAnyResizing(true)}
+                        onResizeEnd={() => setIsAnyResizing(false)}
+                      />
+                    </div>
+                  ))}
+                </div>
             )}
           </div>
         </Card>

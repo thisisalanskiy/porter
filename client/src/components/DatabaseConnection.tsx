@@ -1,33 +1,31 @@
 import React, { useState } from 'react';
-import { Card, Form, Input, InputNumber, Switch, Button, message, Space } from 'antd';
+import { Form, Input, InputNumber, Switch, Button, message, Space } from 'antd';
 import { DatabaseConnection as DbConnectionType } from '../types';
 import axios from 'axios';
 
 interface Props {
   onConnectionChange: (connection: DbConnectionType | null) => void;
+  onSuccess?: () => void;
 }
 
-const DatabaseConnection: React.FC<Props> = ({ onConnectionChange }) => {
+const DatabaseConnection: React.FC<Props> = ({ onConnectionChange, onSuccess }) => {
   const [form] = Form.useForm();
   const [testing, setTesting] = useState(false);
-  const [connected, setConnected] = useState(false);
 
   const testConnection = async (values: any) => {
     setTesting(true);
     try {
       const response = await axios.post('/api/db/connect', values);
       if (response.data.success) {
-        message.success('Database connection successful!');
-        setConnected(true);
+        message.success('Connected!');
         onConnectionChange(values);
+        onSuccess?.();
       } else {
         message.error('Connection failed: ' + response.data.message);
-        setConnected(false);
         onConnectionChange(null);
       }
     } catch (error: any) {
       message.error('Connection failed: ' + (error.response?.data?.message || error.message));
-      setConnected(false);
       onConnectionChange(null);
     } finally {
       setTesting(false);
@@ -100,7 +98,7 @@ const DatabaseConnection: React.FC<Props> = ({ onConnectionChange }) => {
             loading={testing}
             block
           >
-            Test Connection
+            Connect
           </Button>
         </Space>
       </Form.Item>

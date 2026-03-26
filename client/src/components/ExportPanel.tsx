@@ -12,7 +12,7 @@ interface Props {
 
 const { TextArea } = Input;
 
-const ExportPanel: React.FC<Props> = ({ elements, onExport }) => {
+const ExportPanel: React.FC<Props> = ({ elements }) => {
   const [visible, setVisible] = useState(false);
   const [form] = Form.useForm();
   const [exporting, setExporting] = useState(false);

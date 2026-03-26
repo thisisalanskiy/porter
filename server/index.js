@@ -2,26 +2,19 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const { Pool } = require('pg');
-const nodemailer = require('nodemailer');
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 3001;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Database connection pool
-const pool = new Pool({
-  user: process.env.DB_USER || 'postgres',
-  host: process.env.DB_HOST || 'localhost',
-  database: process.env.DB_NAME || 'reporter_db',
-  password: process.env.DB_PASSWORD || 'password',
-  port: process.env.DB_PORT || 5432,
-});
+// Active connection pool — replaced whenever the user connects via the UI
+let pool = null;
 
 // Routes
 app.get('/api/health', (req, res) => {
@@ -32,8 +25,8 @@ app.get('/api/health', (req, res) => {
 app.post('/api/db/connect', async (req, res) => {
   try {
     const { host, port, username, password, database, ssl } = req.body;
-    
-    const testPool = new Pool({
+
+    const newPool = new Pool({
       user: username,
       host: host,
       database: database,
@@ -42,11 +35,14 @@ app.post('/api/db/connect', async (req, res) => {
       ssl: ssl || false,
     });
 
-    // Test connection
-    const client = await testPool.connect();
+    // Test the connection before committing
+    const client = await newPool.connect();
     await client.query('SELECT NOW()');
     client.release();
-    await testPool.end();
+
+    // Tear down the old pool and swap in the new one
+    if (pool) await pool.end().catch(() => {});
+    pool = newPool;
 
     res.json({ success: true, message: 'Database connection successful' });
   } catch (error) {
@@ -56,6 +52,7 @@ app.post('/api/db/connect', async (req, res) => {
 
 // Get database schema
 app.get('/api/db/schema', async (req, res) => {
+  if (!pool) return res.status(400).json({ error: 'No database connection. Connect first.' });
   try {
     const client = await pool.connect();
     
@@ -92,6 +89,7 @@ app.get('/api/db/schema', async (req, res) => {
 
 // Execute SQL query
 app.post('/api/db/query', async (req, res) => {
+  if (!pool) return res.status(400).json({ error: 'No database connection. Connect first.' });
   try {
     const { query } = req.body;
     const client = await pool.connect();
@@ -135,34 +133,6 @@ app.post('/api/reports', async (req, res) => {
       tables,
       createdAt: new Date()
     });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Send email report
-app.post('/api/reports/:id/email', async (req, res) => {
-  try {
-    const { emails, subject, content } = req.body;
-    
-    // Configure nodemailer (gmail example)
-    const transporter = nodemailer.createTransporter({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: emails.join(', '),
-      subject: subject || 'Report from Reporter',
-      html: content || '<p>Please find your report attached.</p>',
-    };
-
-    await transporter.sendMail(mailOptions);
-    res.json({ success: true, message: 'Email sent successfully' });
   } catch (error) {
     res.status(500).json({ error: error.message });
   }

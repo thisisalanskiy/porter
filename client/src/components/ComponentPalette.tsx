@@ -1,96 +1,135 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useDrag } from 'react-dnd';
-import { Card, Space, Button, Popover, message } from 'antd';
 import { ComponentType } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface Props {
   componentTypes: ComponentType[];
-  onAddElement: (type: string, columnSpan: number) => void;
-  availableColumns: number;
-  setAvailableColumns: (columns: number) => void;
 }
 
-const ComponentPalette: React.FC<Props> = ({ 
-  componentTypes, 
-  onAddElement, 
-  availableColumns, 
-  setAvailableColumns 
-}) => {
+const GROUPS: { label: string; types: string[] }[] = [
+  { label: 'Text', types: ['header', 'paragraph'] },
+  { label: 'Data', types: ['table', 'bar-chart', 'line-chart', 'pie-chart'] },
+];
+
+const CONSTRAINTS: Record<string, string> = {
+  'header':     '3 cols · fixed',
+  'paragraph':  '1–3 cols',
+  'table':      '1–3 cols',
+  'bar-chart':  '1–3 cols',
+  'line-chart': '1–3 cols',
+  'pie-chart':  '1–3 cols',
+};
+
+const ComponentPalette: React.FC<Props> = ({ componentTypes }) => {
+  const { tokens } = useTheme();
+  const byType = Object.fromEntries(componentTypes.map((c) => [c.type, c]));
+
   return (
-    <Space direction="vertical" style={{ width: '100%' }}>
-      {componentTypes.map((component) => (
-        <DraggableComponent 
-          key={component.type}
-          component={component}
-          onAddElement={onAddElement}
-          availableColumns={availableColumns}
-          setAvailableColumns={setAvailableColumns}
-        />
-      ))}
-    </Space>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {GROUPS.map((group) => {
+        const items = group.types.map((t) => byType[t]).filter(Boolean);
+        if (!items.length) return null;
+        return (
+          <div key={group.label}>
+            <div style={{
+              fontSize: 11,
+              fontWeight: 600,
+              color: tokens.textSecondary,
+              textTransform: 'uppercase',
+              letterSpacing: '0.06em',
+              marginBottom: 8,
+            }}>
+              {group.label}
+            </div>
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: '1fr 1fr',
+              gap: 8,
+            }}>
+              {items.map((component) => (
+                <DraggableTile key={component.type} component={component} />
+              ))}
+            </div>
+          </div>
+        );
+      })}
+    </div>
   );
 };
 
-interface DraggableComponentProps {
+interface TileProps {
   component: ComponentType;
-  onAddElement: (type: string, columnSpan: number) => void;
-  availableColumns: number;
-  setAvailableColumns: (columns: number) => void;
 }
 
-const DraggableComponent: React.FC<DraggableComponentProps> = ({ 
-  component, 
-  onAddElement,
-  availableColumns,
-  setAvailableColumns
-}) => {
+const DraggableTile: React.FC<TileProps> = ({ component }) => {
+  const [hovered, setHovered] = useState(false);
+  const { tokens } = useTheme();
+
   const [{ isDragging }, drag] = useDrag({
     type: 'component',
     item: { type: component.type, columnSpan: 1 },
-    end: (item, monitor) => {
-      if (monitor.didDrop()) {
-        onAddElement(item.type, item.columnSpan);
-        const newAvailableColumns = availableColumns - item.columnSpan;
-        setAvailableColumns(newAvailableColumns > 0 ? newAvailableColumns : 3);
-      }
-    },
     collect: (monitor) => ({
       isDragging: monitor.isDragging(),
     }),
   });
 
+  const constraint = CONSTRAINTS[component.type];
+
   return (
     <div
       ref={drag}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
       style={{
-        opacity: isDragging ? 0.5 : 1,
+        position: 'relative',
+        height: 92,
+        borderRadius: 8,
+        border: `1px solid ${hovered ? tokens.accent : tokens.borderDefault}`,
+        background: hovered ? tokens.bgTileHover : tokens.bgTile,
         cursor: 'grab',
+        opacity: isDragging ? 0.4 : 1,
+        transition: 'border-color 0.15s, background 0.15s',
+        userSelect: 'none',
+        overflow: 'hidden',
       }}
     >
-      <Card
-        size="small"
-        style={{
-          border: '1px solid #d9d9d9',
-          borderRadius: '6px',
-          transition: 'all 0.2s ease',
-        }}
-        className="component-card"
-      >
-        <Space>
-          {component.icon}
-          <div>
-            <div style={{ fontWeight: 500, marginBottom: 2 }}>
-              {component.label}
-            </div>
-            <div style={{ fontSize: 12, color: '#666' }}>
-              {component.description}
-            </div>
-          </div>
-        </Space>
-      </Card>
+      {/* Icon + label — slide up on hover */}
+      <div style={{
+        position: 'absolute',
+        inset: 0,
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 6,
+        transform: hovered && constraint ? 'translateY(-12px)' : 'translateY(0)',
+        transition: 'transform 0.2s ease',
+      }}>
+        <span style={{ fontSize: 22, lineHeight: 1 }}>{component.icon}</span>
+        <span style={{ fontSize: 12, fontWeight: 500, color: tokens.textPrimary, textAlign: 'center' }}>
+          {component.label}
+        </span>
+      </div>
+      {/* Constraint text — fades in at the bottom */}
+      {constraint && (
+        <span style={{
+          position: 'absolute',
+          bottom: 8,
+          left: 0,
+          right: 0,
+          textAlign: 'center',
+          fontSize: 10,
+          color: tokens.accent,
+          opacity: hovered ? 1 : 0,
+          transform: hovered ? 'translateY(0)' : 'translateY(4px)',
+          transition: 'opacity 0.2s ease, transform 0.2s ease',
+        }}>
+          {constraint}
+        </span>
+      )}
     </div>
   );
 };
 
 export default ComponentPalette;
-

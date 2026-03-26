@@ -2,6 +2,7 @@ import React from 'react';
 import { PieChart as RechartsPieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Typography } from 'antd';
 import { DatabaseSchema } from '../../types';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const { Title } = Typography;
 
@@ -14,10 +15,11 @@ interface Props {
   onConfigChange: (config: any) => void;
 }
 
-const PieChart: React.FC<Props> = ({ data, config, schema }) => {
+const PieChart: React.FC<Props> = ({ data, config }) => {
+  const { tokens } = useTheme();
   if (!data || data.length === 0 || !config?.valueField || !config?.nameField) {
     return (
-      <div style={{ textAlign: 'center', padding: '20px', color: '#999' }}>
+      <div style={{ textAlign: 'center', padding: '20px', color: tokens.textSecondary }}>
         {!config?.valueField || !config?.nameField 
           ? 'Please configure value and name fields' 
           : 'No data available'}
@@ -46,7 +48,7 @@ const PieChart: React.FC<Props> = ({ data, config, schema }) => {
             dataKey={config.valueField}
             nameKey={config.nameField}
           >
-            {data.map((entry, index) => (
+            {data.map((_entry, index) => (
               <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
             ))}
           </Pie>

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Layout, Card, Row, Col, Button, Space, Typography, Modal, Input, message, Empty, Table, Breadcrumb, Segmented, Dropdown, Checkbox, Select, Tabs, Tag, Divider } from 'antd';
+import { Layout, Card, Row, Col, Button, Space, Typography, Modal, Input, message, Empty, Table, Breadcrumb, Segmented, Dropdown, Checkbox, Tabs, Tag } from 'antd';
+import { useTheme, ThemeMode } from '../contexts/ThemeContext';
 
 const { Header, Content } = Layout;
 const { Title, Text } = Typography;
@@ -16,23 +17,17 @@ interface Folder {
 }
 
 const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
+  const { tokens, isDark, mode, setMode } = useTheme();
   const [folders, setFolders] = useState<Folder[]>([]);
   const [reports, setReports] = useState<any[]>([]);
-  const [schedules, setSchedules] = useState<any[]>([]);
   const [showNewFolderModal, setShowNewFolderModal] = useState(false);
-  const [showNewScheduleModal, setShowNewScheduleModal] = useState(false);
-  const [showEditScheduleModal, setShowEditScheduleModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [showLogsModal, setShowLogsModal] = useState(false);
   const [showRenameModal, setShowRenameModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [selectedSchedule, setSelectedSchedule] = useState<any>(null);
   const [activityLogs, setActivityLogs] = useState<any[]>([]);
-  const [settingsTab, setSettingsTab] = useState('email');
-  const [currentView, setCurrentView] = useState<'workspace' | 'schedule'>('workspace');
+  const [settingsTab, setSettingsTab] = useState('appearance');
   const [currentFolder, setCurrentFolder] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
-  const [scheduleViewMode, setScheduleViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedFolderForAction, setSelectedFolderForAction] = useState<any>(null);
   const [deleteConfirmText, setDeleteConfirmText] = useState('');
   const [deleteConfirmCheckbox, setDeleteConfirmCheckbox] = useState(false);
@@ -42,14 +37,14 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
 
   useEffect(() => {
     loadWorkspaceData();
-    
+
     // Listen for report save events to refresh the workspace
     const handleReportSaved = () => {
       loadWorkspaceData();
     };
-    
+
     window.addEventListener('reportSaved', handleReportSaved);
-    
+
     return () => {
       window.removeEventListener('reportSaved', handleReportSaved);
     };
@@ -63,14 +58,12 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
   const loadWorkspaceData = () => {
     const savedReports = JSON.parse(localStorage.getItem('reports') || '[]');
     const savedFolders = JSON.parse(localStorage.getItem('folders') || '[]');
-    const savedSchedules = JSON.parse(localStorage.getItem('schedules') || '[]');
     const savedLogs = JSON.parse(localStorage.getItem('activityLogs') || '[]');
-    
+
     console.log('Loading workspace data:', { savedReports, savedFolders });
-    
+
     setReports(savedReports);
     setFolders(savedFolders);
-    setSchedules(savedSchedules);
     setActivityLogs(savedLogs);
   };
 
@@ -80,7 +73,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
       timestamp: new Date().toISOString(),
       action,
       details,
-      user: 'Current User' // In production, get from auth
+      user: 'Current User'
     };
     const updatedLogs = [newLog, ...activityLogs];
     setActivityLogs(updatedLogs);
@@ -91,7 +84,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
     // Only generate if no data exists in localStorage
     const existingReports = JSON.parse(localStorage.getItem('reports') || '[]');
     const existingFolders = JSON.parse(localStorage.getItem('folders') || '[]');
-    
+
     if (existingReports.length === 0 && existingFolders.length === 0) {
       const sampleFolders = [
         { id: 'folder-1', name: 'Sales Reports', reports: ['report-1', 'report-2'] },
@@ -191,49 +184,11 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
         }
       ];
 
-      const sampleSchedules = [
-        {
-          id: 'schedule-1',
-          reportId: 'report-1',
-          reportName: 'Q4 Sales Performance',
-          frequency: 'weekly',
-          time: '09:00',
-          recipients: ['ceo@company.com', 'sales@company.com'],
-          format: 'pdf',
-          active: true,
-          nextRun: '2024-01-29 09:00'
-        },
-        {
-          id: 'schedule-2',
-          reportId: 'report-4',
-          reportName: 'Monthly Financial Summary',
-          frequency: 'monthly',
-          time: '08:00',
-          recipients: ['cfo@company.com', 'finance@company.com'],
-          format: 'email',
-          active: true,
-          nextRun: '2024-02-01 08:00'
-        },
-        {
-          id: 'schedule-3',
-          reportId: 'report-8',
-          reportName: 'Weekly Executive Summary',
-          frequency: 'daily',
-          time: '07:00',
-          recipients: ['ceo@company.com', 'board@company.com'],
-          format: 'pdf',
-          active: true,
-          nextRun: '2024-01-23 07:00'
-        }
-      ];
-
       localStorage.setItem('folders', JSON.stringify(sampleFolders));
       localStorage.setItem('reports', JSON.stringify(sampleReports));
-      localStorage.setItem('schedules', JSON.stringify(sampleSchedules));
-      
+
       setFolders(sampleFolders);
       setReports(sampleReports);
-      setSchedules(sampleSchedules);
     }
   };
 
@@ -243,7 +198,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
       name,
       reports: [],
     };
-    
+
     const updatedFolders = [...folders, newFolder];
     setFolders(updatedFolders);
     localStorage.setItem('folders', JSON.stringify(updatedFolders));
@@ -260,7 +215,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
         const updatedReports = reports.filter(r => r.id !== reportId);
         setReports(updatedReports);
         localStorage.setItem('reports', JSON.stringify(updatedReports));
-        
+
         // Remove from folders
         const updatedFolders = folders.map(f => ({
           ...f,
@@ -268,15 +223,10 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
         }));
         setFolders(updatedFolders);
         localStorage.setItem('folders', JSON.stringify(updatedFolders));
-        
+
         message.success('Report deleted');
       },
     });
-  };
-
-  const renameFolder = (folder: any) => {
-    setSelectedFolderForAction(folder);
-    setShowRenameModal(true);
   };
 
   const confirmRenameFolder = (newName: string) => {
@@ -285,12 +235,12 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
       return;
     }
 
-    const updatedFolders = folders.map(f => 
+    const updatedFolders = folders.map(f =>
       f.id === selectedFolderForAction.id ? { ...f, name: newName } : f
     );
     setFolders(updatedFolders);
     localStorage.setItem('folders', JSON.stringify(updatedFolders));
-    
+
     // Update breadcrumbs if we're currently in this folder
     if (currentFolder === selectedFolderForAction.id) {
       setBreadcrumbs([
@@ -298,7 +248,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
         { id: selectedFolderForAction.id, name: newName }
       ]);
     }
-    
+
     addActivityLog('Rename Folder', `Renamed folder from "${selectedFolderForAction.name}" to "${newName}"`);
     message.success(`Folder renamed to "${newName}"`);
     setShowRenameModal(false);
@@ -327,326 +277,23 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
     const updatedFolders = folders.filter(f => f.id !== folder.id);
     setFolders(updatedFolders);
     localStorage.setItem('folders', JSON.stringify(updatedFolders));
-    
+
     // Also delete reports in the folder if confirmed
     if (folder.reports.length > 0 && deleteConfirmCheckbox) {
       const updatedReports = reports.filter(r => !folder.reports.includes(r.id));
       setReports(updatedReports);
       localStorage.setItem('reports', JSON.stringify(updatedReports));
     }
-    
+
     addActivityLog('Delete Folder', `Deleted folder "${folder.name}"${folder.reports.length > 0 ? ` with ${folder.reports.length} reports` : ''}`);
     message.success('Folder deleted');
     setShowDeleteModal(false);
     setSelectedFolderForAction(null);
-    
+
     if (currentFolder === folder.id) {
       setCurrentFolder(null);
       setBreadcrumbs([{ id: null, name: 'Workspace' }]);
     }
-  };
-
-  const renderScheduleView = () => {
-    const runningSchedules = schedules.filter(s => s.active);
-    const stoppedSchedules = schedules.filter(s => !s.active);
-    const allSchedules = [...runningSchedules, ...stoppedSchedules];
-
-    const renderScheduleGrid = () => (
-      <Row gutter={[16, 16]}>
-        {allSchedules.map((schedule) => (
-          <Col key={schedule.id} xs={24} sm={12} md={8} lg={6}>
-            <Card
-              style={{ 
-                height: '220px',
-                border: '1px solid #d9d9d9',
-                transition: 'all 0.2s ease'
-              }}
-              className="schedule-card"
-              styles={{ body: { padding: '16px', height: '100%', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' } }}
-            >
-              {/* Content Section */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }}>
-                {/* Title */}
-                <Title 
-                  level={5} 
-                  style={{ 
-                    margin: 0, 
-                    fontSize: '16px', 
-                    lineHeight: '1.3', 
-                    marginBottom: '12px',
-                    textAlign: 'left',
-                    wordWrap: 'break-word',
-                    overflowWrap: 'break-word'
-                  }}
-                >
-                  {schedule.reportName}
-                </Title>
-                
-                {/* Status */}
-                <div style={{ marginBottom: '8px', textAlign: 'left' }}>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    Status: <Text strong style={{ color: schedule.active ? '#52c41a' : '#ff4d4f' }}>
-                      {schedule.active ? 'Active' : 'Stopped'}
-                    </Text>
-                  </Text>
-                </div>
-                
-                {/* Calendar - When runs */}
-                <div style={{ marginBottom: '4px', textAlign: 'left' }}>
-                  <Text type="secondary" style={{ fontSize: '12px' }}>
-                    📅 {schedule.frequency.charAt(0).toUpperCase() + schedule.frequency.slice(1)} at {schedule.time}
-                  </Text>
-                </div>
-                
-                {/* Clock - Next run */}
-                {schedule.active && (
-                  <div style={{ marginBottom: '12px', textAlign: 'left' }}>
-                    <Text type="secondary" style={{ fontSize: '12px' }}>
-                      🕐 Next: {schedule.nextRun}
-                    </Text>
-                  </div>
-                )}
-              </div>
-              
-              {/* Divider */}
-              <Divider style={{ margin: '12px 0 8px 0' }} />
-              
-              {/* Action Buttons - Always at bottom */}
-              <div style={{ display: 'flex', justifyContent: 'flex-start', flexWrap: 'wrap', gap: '4px' }}>
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => {
-                    setSelectedSchedule(schedule);
-                    setShowLogsModal(true);
-                  }}
-                  style={{ padding: '0 4px', fontSize: '12px' }}
-                >
-                  📊 Logs
-                </Button>
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => {
-                    setSelectedSchedule(schedule);
-                    setShowEditScheduleModal(true);
-                  }}
-                  style={{ padding: '0 4px', fontSize: '12px' }}
-                >
-                  ✏️ Edit
-                </Button>
-                {schedule.active ? (
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() => {
-                      const updatedSchedules = schedules.map(s =>
-                        s.id === schedule.id ? { ...s, active: false } : s
-                      );
-                      setSchedules(updatedSchedules);
-                      localStorage.setItem('schedules', JSON.stringify(updatedSchedules));
-                      addActivityLog('Stop Schedule', `Stopped schedule for "${schedule.reportName}"`);
-                      message.success('Schedule stopped');
-                    }}
-                    style={{ padding: '0 4px', fontSize: '12px' }}
-                  >
-                    ⏹️ Stop
-                  </Button>
-                ) : (
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() => {
-                      const updatedSchedules = schedules.map(s =>
-                        s.id === schedule.id ? { ...s, active: true } : s
-                      );
-                      setSchedules(updatedSchedules);
-                      localStorage.setItem('schedules', JSON.stringify(updatedSchedules));
-                      addActivityLog('Start Schedule', `Started schedule for "${schedule.reportName}"`);
-                      message.success('Schedule started');
-                    }}
-                    style={{ padding: '0 4px', fontSize: '12px' }}
-                  >
-                    ▶️ Start
-                  </Button>
-                )}
-              </div>
-            </Card>
-          </Col>
-        ))}
-      </Row>
-    );
-
-    const renderScheduleList = () => (
-      <Table
-        dataSource={allSchedules}
-        columns={[
-          {
-            title: 'Status',
-            dataIndex: 'active',
-            key: 'status',
-            width: 100,
-            render: (active: boolean) => (
-              <Text strong style={{ color: active ? '#52c41a' : '#ff4d4f' }}>
-                {active ? 'Active' : 'Stopped'}
-              </Text>
-            ),
-            filters: [
-              { text: 'Active', value: true },
-              { text: 'Stopped', value: false }
-            ],
-            onFilter: (value, record) => record.active === value
-          },
-          {
-            title: 'Report Name',
-            dataIndex: 'reportName',
-            key: 'reportName',
-            sorter: (a, b) => a.reportName.localeCompare(b.reportName)
-          },
-          {
-            title: 'Frequency',
-            dataIndex: 'frequency',
-            key: 'frequency',
-            width: 120,
-            render: (frequency: string) => frequency.charAt(0).toUpperCase() + frequency.slice(1),
-            filters: [
-              { text: 'Daily', value: 'daily' },
-              { text: 'Weekly', value: 'weekly' },
-              { text: 'Monthly', value: 'monthly' }
-            ],
-            onFilter: (value, record) => record.frequency === value
-          },
-          {
-            title: 'Time',
-            dataIndex: 'time',
-            key: 'time',
-            width: 100
-          },
-          {
-            title: 'Next Run',
-            dataIndex: 'nextRun',
-            key: 'nextRun',
-            width: 150,
-            render: (nextRun: string, record) => record.active ? nextRun : '-'
-          },
-          {
-            title: 'Recipients',
-            dataIndex: 'recipients',
-            key: 'recipients',
-            render: (recipients: string[]) => recipients?.length || 0
-          },
-          {
-            title: 'Actions',
-            key: 'actions',
-            width: 150,
-            render: (_, record) => (
-              <Space>
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => {
-                    setSelectedSchedule(record);
-                    setShowLogsModal(true);
-                  }}
-                >
-                  📊 Logs
-                </Button>
-                <Button
-                  type="text"
-                  size="small"
-                  onClick={() => {
-                    setSelectedSchedule(record);
-                    setShowEditScheduleModal(true);
-                  }}
-                >
-                  ✏️ Edit
-                </Button>
-                {record.active ? (
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() => {
-                      const updatedSchedules = schedules.map(s =>
-                        s.id === record.id ? { ...s, active: false } : s
-                      );
-                      setSchedules(updatedSchedules);
-                      localStorage.setItem('schedules', JSON.stringify(updatedSchedules));
-                      addActivityLog('Stop Schedule', `Stopped schedule for "${record.reportName}"`);
-                      message.success('Schedule stopped');
-                    }}
-                  >
-                    ⏹️ Stop
-                  </Button>
-                ) : (
-                  <Button
-                    type="text"
-                    size="small"
-                    onClick={() => {
-                      const updatedSchedules = schedules.map(s =>
-                        s.id === record.id ? { ...s, active: true } : s
-                      );
-                      setSchedules(updatedSchedules);
-                      localStorage.setItem('schedules', JSON.stringify(updatedSchedules));
-                      addActivityLog('Start Schedule', `Started schedule for "${record.reportName}"`);
-                      message.success('Schedule started');
-                    }}
-                  >
-                    ▶️ Start
-                  </Button>
-                )}
-              </Space>
-            )
-          }
-        ]}
-        pagination={{ pageSize: 10 }}
-        locale={{ emptyText: 'No schedules yet' }}
-      />
-    );
-
-    return (
-      <Space direction="vertical" style={{ width: '100%' }} size="large">
-        <Row align="middle" style={{ position: 'relative' }}>
-          <Col>
-            <Space>
-              <Text style={{ fontSize: '16px', fontWeight: 500 }}>📅 Scheduled Reports</Text>
-            </Space>
-          </Col>
-          <Col style={{ 
-            position: 'absolute', 
-            left: '50%', 
-            transform: 'translateX(-50%)',
-            zIndex: 1
-          }}>
-            <Segmented
-              options={[
-                { label: '⊞ Grid', value: 'grid' },
-                { label: '☰ List', value: 'list' },
-              ]}
-              value={scheduleViewMode}
-              onChange={(value) => setScheduleViewMode(value as 'grid' | 'list')}
-            />
-          </Col>
-          <Col style={{ marginLeft: 'auto' }}>
-            <Button onClick={() => setShowNewScheduleModal(true)} type="default">
-              ➕ New Schedule
-            </Button>
-          </Col>
-        </Row>
-
-        {allSchedules.length === 0 ? (
-          <Empty
-            description="No schedules yet"
-            style={{ marginTop: '100px' }}
-          >
-            <Button type="primary" onClick={() => setShowNewScheduleModal(true)}>
-              ➕ Create Schedule
-            </Button>
-          </Empty>
-        ) : (
-          scheduleViewMode === 'grid' ? renderScheduleGrid() : renderScheduleList()
-        )}
-      </Space>
-    );
   };
 
   const openFolder = (folderId: string) => {
@@ -706,11 +353,11 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
           <div style={{ position: 'relative' }} className="folder-card-wrapper">
             <Card
               onClick={() => openFolder(folder.id)}
-              style={{ 
-                height: '200px', 
-                display: 'flex', 
+              style={{
+                height: '200px',
+                display: 'flex',
                 flexDirection: 'column',
-                border: '1px solid #d9d9d9',
+                border: `1px solid ${tokens.borderDefault}`,
                 transition: 'all 0.2s ease'
               }}
               styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
@@ -720,7 +367,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                 <div style={{ fontSize: '48px', marginBottom: '12px' }}>
                   📁
                 </div>
-                <div className="hover-actions" style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                <div className="hover-actions" style={{ fontSize: '12px', color: tokens.textSecondary, marginBottom: '8px' }}>
                   {folder.reports.length} item{folder.reports.length !== 1 ? 's' : ''}
                 </div>
                 <Title level={5} style={{ margin: 0, fontSize: '16px', lineHeight: '1.2' }}>
@@ -728,9 +375,9 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                 </Title>
               </div>
             </Card>
-            
+
             {/* Hover Actions Overlay */}
-            <div 
+            <div
               className="folder-trash-button"
               style={{
                 position: 'absolute',
@@ -750,7 +397,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                   deleteFolder(folder);
                 }}
                 className="grid-delete-button"
-                style={{ 
+                style={{
                   padding: '4px 12px',
                   fontSize: '14px',
                   fontWeight: 500
@@ -769,11 +416,11 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
           <div style={{ position: 'relative' }} className="report-card-wrapper">
             <Card
               onClick={() => onOpenReport(report)}
-              style={{ 
-                height: '200px', 
-                display: 'flex', 
+              style={{
+                height: '200px',
+                display: 'flex',
                 flexDirection: 'column',
-                border: '1px solid #d9d9d9',
+                border: `1px solid ${tokens.borderDefault}`,
                 transition: 'all 0.2s ease'
               }}
               styles={{ body: { flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' } }}
@@ -783,24 +430,24 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                 <div style={{ fontSize: '40px', marginBottom: '12px' }}>
                   📊
                 </div>
-                <div className="hover-actions" style={{ fontSize: '12px', color: '#666', marginBottom: '8px' }}>
+                <div className="hover-actions" style={{ fontSize: '12px', color: tokens.textSecondary, marginBottom: '8px' }}>
                   {report.elements?.length || 0} elements • {new Date(report.updatedAt).toLocaleDateString()}
                 </div>
-                <Title level={5} style={{ 
-                  margin: 0, 
-                  fontSize: '16px', 
+                <Title level={5} style={{
+                  margin: 0,
+                  fontSize: '16px',
                   lineHeight: '1.2',
-                  overflow: 'hidden', 
-                  textOverflow: 'ellipsis', 
+                  overflow: 'hidden',
+                  textOverflow: 'ellipsis',
                   whiteSpace: 'nowrap'
                 }}>
                   {report.name}
                 </Title>
               </div>
             </Card>
-            
+
             {/* Hover Actions Overlay */}
-            <div 
+            <div
               className="report-trash-button"
               style={{
                 position: 'absolute',
@@ -820,7 +467,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                   deleteReport(report.id);
                 }}
                 className="grid-delete-button"
-                style={{ 
+                style={{
                   padding: '4px 12px',
                   fontSize: '14px',
                   fontWeight: 500
@@ -993,31 +640,15 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
   };
 
   return (
-    <Layout style={{ height: '100vh', background: '#f5f5f5' }}>
-      <Header style={{ background: '#fff', borderBottom: '1px solid #f0f0f0', padding: '0 24px' }}>
+    <Layout style={{ height: '100vh', background: tokens.bgSecondary }}>
+      <Header style={{ background: tokens.bgPrimary, borderBottom: `1px solid ${tokens.borderSubtle}`, padding: '0 24px' }}>
         <Row justify="space-between" align="middle" style={{ height: '100%' }}>
           <Col>
             <Space align="center">
-              <Title level={3} style={{ margin: 0, color: '#2d87ea' }}>
+              <Title level={3} style={{ margin: 0, color: tokens.accent }}>
                 📄 Porter
               </Title>
               <Tag color="blue">BETA</Tag>
-            </Space>
-          </Col>
-          <Col>
-            <Space>
-              <Button 
-                type={currentView === 'workspace' ? 'primary' : 'default'}
-                onClick={() => setCurrentView('workspace')}
-              >
-                📂 Workspace
-              </Button>
-              <Button 
-                type={currentView === 'schedule' ? 'primary' : 'default'}
-                onClick={() => setCurrentView('schedule')}
-              >
-                📅 Schedule
-              </Button>
             </Space>
           </Col>
           <Col>
@@ -1038,11 +669,6 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
                           setShowNewFolderModal(true);
                         }
                       }
-                    },
-                    {
-                      key: 'schedule',
-                      label: '📅 Schedule',
-                      onClick: () => setShowNewScheduleModal(true)
                     }
                   ]
                 }}
@@ -1062,90 +688,86 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
       </Header>
 
       <Content style={{ padding: '24px' }}>
-        {currentView === 'schedule' ? (
-          renderScheduleView()
-        ) : (
-          <Space direction="vertical" style={{ width: '100%' }} size="large">
-            {/* Breadcrumbs and Controls */}
-            <Row align="middle" style={{ position: 'relative' }}>
-              <Col>
-              <Breadcrumb
-                items={breadcrumbs.map((crumb) => ({
-                  title: (
-                    <span
-                      style={{
-                        cursor: 'pointer',
-                        color: '#666',
-                        fontWeight: crumb.id === null ? 500 : 'normal',
-                        fontSize: '16px',
-                        lineHeight: '24px',
-                        userSelect: 'none',
-                        display: 'inline-flex',
-                        alignItems: 'center'
-                      }}
-                      onClick={() => navigateToBreadcrumb(crumb.id)}
-                    >
-                      {crumb.id === null ? '🏠 Workspace' : crumb.name}
-                    </span>
-                  )
-                }))}
+        <Space direction="vertical" style={{ width: '100%' }} size="large">
+          {/* Breadcrumbs and Controls */}
+          <Row align="middle" style={{ position: 'relative' }}>
+            <Col>
+            <Breadcrumb
+              items={breadcrumbs.map((crumb) => ({
+                title: (
+                  <span
+                    style={{
+                      cursor: 'pointer',
+                      color: tokens.textSecondary,
+                      fontWeight: crumb.id === null ? 500 : 'normal',
+                      fontSize: '16px',
+                      lineHeight: '24px',
+                      userSelect: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center'
+                    }}
+                    onClick={() => navigateToBreadcrumb(crumb.id)}
+                  >
+                    {crumb.id === null ? '🏠 Workspace' : crumb.name}
+                  </span>
+                )
+              }))}
+            />
+            </Col>
+            <Col style={{
+              position: 'absolute',
+              left: '50%',
+              transform: 'translateX(-50%)',
+              zIndex: 1
+            }}>
+              <Segmented
+                options={[
+                  { label: '⊞ Grid', value: 'grid' },
+                  { label: '☰ List', value: 'list' },
+                ]}
+                value={viewMode}
+                onChange={(value) => setViewMode(value as 'grid' | 'list')}
               />
-              </Col>
-              <Col style={{ 
-                position: 'absolute', 
-                left: '50%', 
-                transform: 'translateX(-50%)',
-                zIndex: 1
-              }}>
-                <Segmented
-                  options={[
-                    { label: '⊞ Grid', value: 'grid' },
-                    { label: '☰ List', value: 'list' },
-                  ]}
-                  value={viewMode}
-                  onChange={(value) => setViewMode(value as 'grid' | 'list')}
-                />
-              </Col>
-              <Col style={{ marginLeft: 'auto' }}>
-                <Space>
-                  <Button onClick={onNewReport}>
-                    ➕ New Report
-                  </Button>
-                  {currentFolder === null && (
-                    <Button onClick={() => setShowNewFolderModal(true)}>
-                      📁 New Folder
-                    </Button>
-                  )}
-                </Space>
-              </Col>
-            </Row>
-
-            {/* Content Area */}
-            {displayFolders.length === 0 && displayReports.length === 0 ? (
-              <Empty
-                description={currentFolder === null ? "No reports or folders yet" : "This folder is empty"}
-                style={{ marginTop: '100px' }}
-              >
-                {currentFolder === null ? (
-                  <Space>
-                    <Button onClick={() => setShowNewFolderModal(true)}>
-                      ➕ Create Folder
-                    </Button>
-                    <Button type="primary" onClick={onNewReport}>
-                      ➕ Create Report
-                    </Button>
-                  </Space>
-                ) : (
-                  <Button type="primary" onClick={onNewReport}>
-                    Create Report in this Folder
+            </Col>
+            <Col style={{ marginLeft: 'auto' }}>
+              <Space>
+                <Button onClick={onNewReport}>
+                  ➕ New Report
+                </Button>
+                {currentFolder === null && (
+                  <Button onClick={() => setShowNewFolderModal(true)}>
+                    📁 New Folder
                   </Button>
                 )}
-              </Empty>
-            ) : (
-              viewMode === 'grid' ? renderGridView() : renderListView()
-            )}
-          </Space>
-        )}
+              </Space>
+            </Col>
+          </Row>
+
+          {/* Content Area */}
+          {displayFolders.length === 0 && displayReports.length === 0 ? (
+            <Empty
+              description={currentFolder === null ? "No reports or folders yet" : "This folder is empty"}
+              style={{ marginTop: '100px' }}
+            >
+              {currentFolder === null ? (
+                <Space>
+                  <Button onClick={() => setShowNewFolderModal(true)}>
+                    ➕ Create Folder
+                  </Button>
+                  <Button type="primary" onClick={onNewReport}>
+                    ➕ Create Report
+                  </Button>
+                </Space>
+              ) : (
+                <Button type="primary" onClick={onNewReport}>
+                  Create Report in this Folder
+                </Button>
+              )}
+            </Empty>
+          ) : (
+            viewMode === 'grid' ? renderGridView() : renderListView()
+          )}
+        </Space>
       </Content>
 
       <Modal
@@ -1205,9 +827,9 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
           <div>
             <Text strong>Are you sure you want to delete "{selectedFolderForAction?.name}"?</Text>
           </div>
-          
+
           {selectedFolderForAction?.reports.length > 0 && (
-            <div style={{ padding: '12px', background: '#fff7e6', borderRadius: '6px', border: '1px solid #ffd591' }}>
+            <div style={{ padding: '12px', background: isDark ? 'rgba(255,215,0,0.08)' : '#fff7e6', borderRadius: '6px', border: `1px solid ${isDark ? 'rgba(255,215,0,0.25)' : '#ffd591'}` }}>
               <Text type="warning">
                 ⚠️ This folder contains {selectedFolderForAction.reports.length} report(s).
               </Text>
@@ -1221,7 +843,7 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
               </div>
             </div>
           )}
-          
+
           <div>
             <Text>Type <Text code>DELETE</Text> to confirm:</Text>
             <Input
@@ -1232,126 +854,6 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
             />
           </div>
         </Space>
-      </Modal>
-
-      <Modal
-        title="New Schedule"
-        open={showNewScheduleModal}
-        onCancel={() => setShowNewScheduleModal(false)}
-        onOk={() => {
-          // Handle new schedule creation
-          setShowNewScheduleModal(false);
-        }}
-        width={600}
-      >
-        <Space direction="vertical" style={{ width: '100%' }}>
-          <div>
-            <Text strong>Select Report or Folder:</Text>
-            <Select
-              style={{ width: '100%', marginTop: '8px' }}
-              placeholder="Choose a report or folder to schedule"
-            >
-              {reports.map(report => (
-                <Select.Option key={report.id} value={report.id}>
-                  📊 {report.name}
-                </Select.Option>
-              ))}
-              {folders.map(folder => (
-                <Select.Option key={folder.id} value={folder.id}>
-                  📁 {folder.name} ({folder.reports.length} reports)
-                </Select.Option>
-              ))}
-            </Select>
-          </div>
-
-          <div>
-            <Text strong>Frequency:</Text>
-            <Select
-              style={{ width: '100%', marginTop: '8px' }}
-              defaultValue="daily"
-            >
-              <Select.Option value="daily">Daily</Select.Option>
-              <Select.Option value="weekly">Weekly</Select.Option>
-              <Select.Option value="monthly">Monthly</Select.Option>
-            </Select>
-          </div>
-
-          <div>
-            <Text strong>Time:</Text>
-            <Input
-              type="time"
-              style={{ width: '100%', marginTop: '8px' }}
-              defaultValue="09:00"
-            />
-          </div>
-
-          <div>
-            <Text strong>Recipients (comma-separated emails):</Text>
-            <Input.TextArea
-              rows={3}
-              style={{ marginTop: '8px' }}
-              placeholder="user1@example.com, user2@example.com"
-            />
-          </div>
-        </Space>
-      </Modal>
-
-      <Modal
-        title="Edit Schedule"
-        open={showEditScheduleModal}
-        onCancel={() => {
-          setShowEditScheduleModal(false);
-          setSelectedSchedule(null);
-        }}
-        onOk={() => {
-          addActivityLog('Edit Schedule', `Edited schedule for "${selectedSchedule?.reportName}"`);
-          message.success('Schedule updated');
-          setShowEditScheduleModal(false);
-          setSelectedSchedule(null);
-        }}
-        width={600}
-      >
-        {selectedSchedule && (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div>
-              <Text strong>Report:</Text>
-              <div style={{ marginTop: '8px', padding: '8px', background: '#f5f5f5', borderRadius: '4px' }}>
-                📊 {selectedSchedule.reportName}
-              </div>
-            </div>
-
-            <div>
-              <Text strong>Frequency:</Text>
-              <Select
-                style={{ width: '100%', marginTop: '8px' }}
-                defaultValue={selectedSchedule.frequency}
-              >
-                <Select.Option value="daily">Daily</Select.Option>
-                <Select.Option value="weekly">Weekly</Select.Option>
-                <Select.Option value="monthly">Monthly</Select.Option>
-              </Select>
-            </div>
-
-            <div>
-              <Text strong>Time:</Text>
-              <Input
-                type="time"
-                style={{ width: '100%', marginTop: '8px' }}
-                defaultValue={selectedSchedule.time}
-              />
-            </div>
-
-            <div>
-              <Text strong>Recipients (comma-separated emails):</Text>
-              <Input.TextArea
-                rows={3}
-                style={{ marginTop: '8px' }}
-                defaultValue={selectedSchedule.recipients?.join(', ')}
-                placeholder="user1@example.com, user2@example.com"
-              />
-            </div>
-          </Space>
-        )}
       </Modal>
 
       <Modal
@@ -1366,51 +868,30 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
           onChange={setSettingsTab}
           items={[
             {
-              key: 'email',
-              label: '📧 Email Integration',
+              key: 'appearance',
+              label: '🎨 Appearance',
               children: (
-                <Space direction="vertical" style={{ width: '100%' }}>
-                  <div>
-                    <Text type="secondary">Configure your email provider for sending reports</Text>
+                <div style={{ padding: '8px 0 16px' }}>
+                  <div style={{ marginBottom: 12, fontWeight: 500, color: tokens.textPrimary }}>Theme</div>
+                  <Segmented<ThemeMode>
+                    value={mode}
+                    onChange={setMode}
+                    options={[
+                      { label: '☀️  Light',  value: 'light'  },
+                      { label: '🌙  Dark',   value: 'dark'   },
+                      { label: '💻  System', value: 'system' },
+                    ]}
+                    block
+                  />
+                  <div style={{ marginTop: 8, fontSize: 12, color: tokens.textSecondary }}>
+                    {mode === 'system'
+                      ? 'Follows your OS appearance setting.'
+                      : mode === 'dark'
+                      ? 'Always use dark theme.'
+                      : 'Always use light theme.'}
                   </div>
-
-                  <div>
-                    <Text strong>Email Provider:</Text>
-                    <Select
-                      style={{ width: '100%', marginTop: '8px' }}
-                      placeholder="Select your email provider"
-                    >
-                      <Select.Option value="gmail">Gmail</Select.Option>
-                      <Select.Option value="outlook">Outlook</Select.Option>
-                      <Select.Option value="yahoo">Yahoo</Select.Option>
-                      <Select.Option value="custom">Custom SMTP</Select.Option>
-                    </Select>
-                  </div>
-
-                  <div>
-                    <Text strong>Email Address:</Text>
-                    <Input
-                      type="email"
-                      style={{ width: '100%', marginTop: '8px' }}
-                      placeholder="your-email@example.com"
-                    />
-                  </div>
-
-                  <div>
-                    <Text strong>App Password / API Key:</Text>
-                    <Input.Password
-                      style={{ width: '100%', marginTop: '8px' }}
-                      placeholder="Enter your app password or API key"
-                    />
-                  </div>
-
-                  <div>
-                    <Button type="primary" style={{ width: '100%' }}>
-                      🔗 Connect Email Account
-                    </Button>
-                  </div>
-                </Space>
-              )
+                </div>
+              ),
             },
             {
               key: 'logs',
@@ -1457,106 +938,6 @@ const Workspace: React.FC<Props> = ({ onNewReport, onOpenReport }) => {
             }
           ]}
         />
-      </Modal>
-
-      <Modal
-        title="Schedule Execution Logs"
-        open={showLogsModal}
-        onCancel={() => {
-          setShowLogsModal(false);
-          setSelectedSchedule(null);
-        }}
-        footer={[
-          <Button key="close" onClick={() => {
-            setShowLogsModal(false);
-            setSelectedSchedule(null);
-          }}>
-            Close
-          </Button>
-        ]}
-        width={700}
-      >
-        {selectedSchedule && (
-          <Space direction="vertical" style={{ width: '100%' }}>
-            <div>
-              <Text strong>Report: </Text>
-              <Text>{selectedSchedule.reportName}</Text>
-            </div>
-            
-            <Divider style={{ margin: '12px 0' }} />
-            
-            <div>
-              <Title level={5}>Execution History</Title>
-              <Table
-                dataSource={[
-                  {
-                    key: '1',
-                    executedAt: '2024-01-22 09:00:00',
-                    status: 'Success',
-                    recipientsSent: selectedSchedule.recipients?.length || 0,
-                    recipientsTotal: selectedSchedule.recipients?.length || 0,
-                    duration: '2.3s'
-                  },
-                  {
-                    key: '2',
-                    executedAt: '2024-01-21 09:00:00',
-                    status: 'Success',
-                    recipientsSent: selectedSchedule.recipients?.length || 0,
-                    recipientsTotal: selectedSchedule.recipients?.length || 0,
-                    duration: '2.1s'
-                  },
-                  {
-                    key: '3',
-                    executedAt: '2024-01-20 09:00:00',
-                    status: 'Success',
-                    recipientsSent: selectedSchedule.recipients?.length || 0,
-                    recipientsTotal: selectedSchedule.recipients?.length || 0,
-                    duration: '2.5s'
-                  }
-                ]}
-                columns={[
-                  {
-                    title: 'Executed At',
-                    dataIndex: 'executedAt',
-                    key: 'executedAt',
-                    width: 160
-                  },
-                  {
-                    title: 'Status',
-                    dataIndex: 'status',
-                    key: 'status',
-                    width: 100,
-                    render: (status: string) => (
-                      <Text strong style={{ color: status === 'Success' ? '#52c41a' : '#ff4d4f' }}>
-                        {status}
-                      </Text>
-                    )
-                  },
-                  {
-                    title: 'Recipients',
-                    key: 'recipients',
-                    width: 120,
-                    render: (_, record) => `${record.recipientsSent}/${record.recipientsTotal}`
-                  },
-                  {
-                    title: 'Duration',
-                    dataIndex: 'duration',
-                    key: 'duration',
-                    width: 100
-                  }
-                ]}
-                pagination={false}
-                size="small"
-              />
-            </div>
-            
-            <div style={{ marginTop: '16px', padding: '12px', background: '#f5f5f5', borderRadius: '6px' }}>
-              <Text type="secondary" style={{ fontSize: '12px' }}>
-                📧 Recipients: {selectedSchedule.recipients?.join(', ') || 'None configured'}
-              </Text>
-            </div>
-          </Space>
-        )}
       </Modal>
 
     </Layout>

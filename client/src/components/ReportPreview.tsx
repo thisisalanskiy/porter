@@ -1,9 +1,11 @@
 import React, { useRef } from 'react';
 import { Modal, Typography, Button, Space } from 'antd';
 import { ReportElement } from '../types';
+import { useTheme } from '../contexts/ThemeContext';
 import ReportElementComponent from './ReportElement';
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { generateHTML } from '../utils/htmlExporter';
 
 const { Title } = Typography;
 
@@ -15,6 +17,7 @@ interface Props {
 }
 
 const ReportPreview: React.FC<Props> = ({ visible, onClose, elements, reportName = 'Report' }) => {
+  const { tokens } = useTheme();
   const reportRef = useRef<HTMLDivElement>(null);
 
   const handleExportPDF = async () => {
@@ -30,19 +33,18 @@ const ReportPreview: React.FC<Props> = ({ visible, onClose, elements, reportName
 
       const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF('p', 'mm', 'a4');
-      
+
       const imgWidth = 210; // A4 width in mm
       const pageHeight = 295; // A4 height in mm
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       let heightLeft = imgHeight;
-
       let position = 0;
 
       pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
       heightLeft -= pageHeight;
 
-      while (heightLeft >= 0) {
-        position = heightLeft - imgHeight;
+      while (heightLeft > 0) {
+        position -= pageHeight; // shift image up by one page height
         pdf.addPage();
         pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
         heightLeft -= pageHeight;
@@ -60,6 +62,19 @@ const ReportPreview: React.FC<Props> = ({ visible, onClose, elements, reportName
     window.open(`mailto:?subject=${subject}&body=${body}`);
   };
 
+  const handleExportHTML = () => {
+    const html = generateHTML(elements, reportName);
+    const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${reportName.replace(/[^a-z0-9]/gi, '_').toLowerCase()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   return (
     <Modal
       title="Report Preview"
@@ -72,15 +87,18 @@ const ReportPreview: React.FC<Props> = ({ visible, onClose, elements, reportName
           <Button onClick={handleExportPDF}>
             📄 Export as PDF
           </Button>
+          <Button onClick={handleExportHTML}>
+            🌐 Export as HTML
+          </Button>
           <Button onClick={handleEmailReport}>
-            📧 Email Report
+            📧 Open Email Draft
           </Button>
           <Button type="primary" onClick={onClose}>
             Close
           </Button>
         </Space>
       }
-      bodyStyle={{ padding: '24px', maxHeight: '80vh', overflow: 'auto' }}
+      styles={{ body: { padding: '24px', maxHeight: '80vh', overflow: 'auto' } }}
     >
       <div 
         ref={reportRef}
@@ -96,7 +114,7 @@ const ReportPreview: React.FC<Props> = ({ visible, onClose, elements, reportName
         </Title>
         
         {elements.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+          <div style={{ textAlign: 'center', padding: '40px', color: tokens.textSecondary }}>
             <p>No elements added to this report yet.</p>
             <p>Add components from the sidebar to see the preview.</p>
           </div>
