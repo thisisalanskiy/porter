@@ -1,5 +1,7 @@
 # Porter - Drag & Drop Report Builder MVP
 
+> **🚧 Work in progress.** Porter is an MVP under active development. Expect breaking changes, incomplete features, and rough edges — see [Known Issues](#known-issues) before using it with real data.
+
 A modern web-based tool that allows non-technical users to build reports from database data using an intuitive drag-and-drop interface.
 
 ## Features
@@ -223,6 +225,14 @@ reporter/
 │   └── package.json       # Backend dependencies
 └── package.json           # Root package.json
 ```
+
+## Known Issues
+
+- ⚠️ **SQL injection**: `POST /api/db/query` passes the request body's `query` string straight to `pg`'s `client.query()` with no sanitization, parameterization, or allowlisting. Do not expose this server to untrusted input or the public internet as-is.
+- No authentication on any API route.
+- Report/connection persistence is localStorage only — not production storage.
+- PDF export (`ReportPreview`) has known multi-page layout bugs.
+- Pie/bar/line charts need two fields (label + value); drag-and-drop currently only assigns one, so use the config panel for those chart types.
 
 ## Future Enhancements
 
